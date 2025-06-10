@@ -257,3 +257,19 @@
     
     (ok true)))
 
+;; Update risk allocation for a specific asset
+(define-public (set-risk-allocation (risk-level uint) (asset-id uint) (percentage uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (or (is-eq risk-level risk-conservative) 
+                (is-eq risk-level risk-moderate) 
+                (is-eq risk-level risk-aggressive)) 
+            err-invalid-risk-level)
+    (asserts! (is-some (map-get? assets { asset-id: asset-id })) err-asset-not-exists)
+    (asserts! (and (>= percentage u0) (<= percentage u100)) err-invalid-threshold)
+    
+    (map-set risk-allocations
+      { risk-level: risk-level, asset-id: asset-id }
+      { target-percentage: percentage })
+    
+    (ok true)))
