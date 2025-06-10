@@ -75,4 +75,48 @@
   }
 )
 
+;; Public functions
+
+;; Initialize or update a user's portfolio
+(define-public (initialize-portfolio (risk-level uint))
+  (begin
+    (asserts! (or (is-eq risk-level risk-conservative) 
+                (is-eq risk-level risk-moderate) 
+                (is-eq risk-level risk-aggressive)) 
+            err-invalid-risk-level)
+    (map-set user-portfolios 
+      { user: tx-sender }
+      {
+        risk-level: risk-level,
+        total-btc-value: u0,
+        last-rebalance-block: stacks-block-height,
+        custom-allocations: false,
+        active: true
+      })
+    (ok true)))
+
+;; Deposit an asset into the portfolio
+(define-public (deposit-asset (asset-id uint) (amount uint))
+  (let (
+    (asset-info (unwrap! (map-get? assets { asset-id: asset-id }) err-asset-not-exists))
+    (portfolio (unwrap! (map-get? user-portfolios { user: tx-sender }) err-invalid-risk-level))
+    (token-contract (get token-contract asset-info))
+    (token-id (get token-id asset-info))
+    (current-balance (default-to u0 (get amount (map-get? user-asset-balances { user: tx-sender, asset-id: asset-id }))))
+  )
+    (asserts! (> amount u0) err-invalid-amount)
+    
+    
+    ;; Update user's balance
+    (map-set user-asset-balances 
+      { user: tx-sender, asset-id: asset-id }
+      { amount: (+ current-balance amount) })
+    
+    ;; Update portfolio total value - in a real implementation, you'd calculate BTC value
+    (map-set user-portfolios
+      { user: tx-sender }
+      (merge portfolio { total-btc-value: (+ (get total-btc-value portfolio) amount) }))
+    
+    (ok true)))
+
 
