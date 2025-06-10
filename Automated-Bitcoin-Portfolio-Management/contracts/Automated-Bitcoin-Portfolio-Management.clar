@@ -170,4 +170,64 @@
       
       (ok yield-amount))))
 
+;; Get a user's portfolio composition
+(define-read-only (get-portfolio-composition (user principal))
+  (let (
+    (portfolio (map-get? user-portfolios { user: user }))
+  )
+    (if (is-some portfolio)
+      (ok (some portfolio))
+      (err err-invalid-risk-level))))
+
+;; Get current asset allocation for user
+(define-read-only (get-current-allocation (user principal))
+  (ok (map-get? user-portfolios { user: user })))
+
+;; Helper to set individual allocation
+(define-private (set-allocation (allocation {asset-id: uint, percentage: uint}))
+  (let (
+    (asset-id (get asset-id allocation))
+    (percentage (get percentage allocation))
+    (portfolio (unwrap-panic (map-get? user-portfolios { user: tx-sender })))
+    (risk-level (get risk-level portfolio))
+  )
+    (map-set risk-allocations
+      { risk-level: risk-level, asset-id: asset-id }
+      { target-percentage: percentage })
+    true))
+
+;; Calculate current portfolio drift compared to target allocation
+(define-private (calculate-portfolio-drift (user principal))
+  (let (
+    (portfolio (unwrap-panic (map-get? user-portfolios { user: user })))
+    (risk-level (get risk-level portfolio))
+
+  )
+    u10)) ;; 10% drift from targets
+
+;; Check if a portfolio is active
+(define-private (active-portfolio (user principal))
+  (let (
+    (portfolio (map-get? user-portfolios { user: user }))
+  )
+    (if (is-some portfolio)
+      (get active (unwrap-panic portfolio))
+      false)))
+
+;; Record portfolio performance for historical tracking
+(define-private (record-performance (user principal))
+  (let (
+    (portfolio (unwrap-panic (map-get? user-portfolios { user: user })))
+    (current-value (get total-btc-value portfolio))
+    ;; In a real implementation, you'd calculate actual performance metrics
+    (percentage-change 10) ;; Placeholder for 10% increase
+  )
+    (map-set portfolio-performance
+      { user: user, timestamp: stacks-block-height }
+      { 
+        btc-value: current-value,
+        percentage-change: percentage-change
+      })
+    (ok true)))
+
 
