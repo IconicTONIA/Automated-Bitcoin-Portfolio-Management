@@ -231,3 +231,29 @@
     (ok true)))
 
 
+;; Register a new asset that can be managed in portfolios
+(define-public (register-asset (asset-id uint) 
+                             (name (string-ascii 32)) 
+                             (token-contract principal)
+                             (token-id (optional uint))
+                             (is-yield-bearing bool)
+                             (yield-source (optional principal))
+                             (initial-yield-percentage uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (not (is-some (map-get? assets { asset-id: asset-id }))) err-asset-exists)
+    
+    (map-set assets
+      { asset-id: asset-id }
+      {
+        name: name,
+        token-contract: token-contract,
+        token-id: token-id,
+        is-yield-bearing: is-yield-bearing,
+        yield-source: yield-source,
+        current-yield-percentage: initial-yield-percentage,
+        last-yield-claim-block: stacks-block-height
+      })
+    
+    (ok true)))
+
